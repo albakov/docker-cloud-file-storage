@@ -1,5 +1,13 @@
 # Docker-сборка для Cloud File Storage (Backend/Frontend)
 
+## Клонирование проекта
+
+Команда для клонирования текущего репозитория и связанных backend, frontend:
+
+```
+git clone --recurse-submodules https://github.com/albakov/docker-cloud-file-storage.git
+```
+
 ## Структура проекта
 
 - `backend` - подробнее [здесь](https://github.com/albakov/go-cloud-file-storage).
