@@ -1,0 +1,13 @@
+services:
+  mariadb:
+    volumes:
+      - ./docker/mariadb/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/mariadb/data:/var/lib/mysql
+
+  minio:
+    volumes:
+      - ./docker/minio/data:/data
+
+  backend:
+    env_file:
+      - ./backend/.env.prod

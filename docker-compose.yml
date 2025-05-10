@@ -1,0 +1,74 @@
+services:
+  mariadb:
+    image: mariadb:10.11.11
+    container_name: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ['CMD', '/usr/local/bin/healthcheck.sh', '--innodb_initialized']
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  migrations:
+    image: ghcr.io/kukymbr/goose-docker:3.24.3
+    environment:
+      - GOOSE_DRIVER=${GOOSE_DRIVER}
+      - GOOSE_DBSTRING=root:${MYSQL_ROOT_PASSWORD}@tcp(mariadb)/${DB_NAME}
+    volumes:
+      - ./backend/db/migrations:/migrations
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  createbuckets:
+    image: minio/minio:latest
+    depends_on:
+      - minio
+    restart: on-failure
+    entrypoint: >
+      /bin/sh -c "
+        sleep 5;
+        mc alias set minioalias http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+        mc mb minioalias/${MINIO_BUCKET};
+        mc admin user add minioalias ${MINIO_USER} ${MINIO_USER_PASSWORD};
+        mc admin policy attach minioalias readwrite --user=${MINIO_USER};
+        mc admin accesskey create minioalias/ ${MINIO_USER} --access-key ${MINIO_ACCESS_KEY} --secret-key ${MINIO_SECRET_KEY}
+        exit 0;
+      "
+
+  backend:
+    build: ./backend
+    container_name: backend
+    expose:
+      - 8080
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    volumes:
+      - nginx-client-temp:/var/cache/nginx/client_temp
+
+volumes:
+  nginx-client-temp:

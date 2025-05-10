@@ -1,0 +1,6 @@
+[submodule "backend"]
+	path = backend
+	url = git@gitlab.com:albakov/go-cloud-file-storage.git
+[submodule "frontend"]
+	path = frontend
+	url = git@gitlab.com:albakov/vue-cloud-file-storage.git
